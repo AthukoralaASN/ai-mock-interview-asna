@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.52",
+    "@google/genai": "^1.48.0",
     "@hookform/resolvers": "^5.2.2",
     "@vapi-ai/web": "^2.5.2",
     "ai": "^6.0.134",

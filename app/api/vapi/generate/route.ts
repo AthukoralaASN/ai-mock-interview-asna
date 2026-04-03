@@ -1,5 +1,4 @@
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { GoogleGenAI } from "@google/genai";
 import {getRandomInterviewCover} from "@/lib/utils";
 import {db} from "@/firebase/admin";
 
@@ -11,12 +10,27 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    const { type, role, level, techstack, amount, userid } = await request.json();
+    const body = await request.json();
+
+    console.log("BODY:", body);
+
+    const {
+        type,
+        role,
+        level,
+        techstack,
+        amount,
+        userid
+    } = body.arguments || body;
 
     try {
-        const { text: questions } = await generateText({
-            model: google('gemini-2.0-flash-001'),
-            prompt: `Prepare questions for a job interview.
+        const ai = new GoogleGenAI({
+            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+        });
+
+        const completion = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Prepare questions for a job interview.
 
 The job role is ${role}.
 The job experience level is ${level}.
@@ -30,16 +44,22 @@ The questions are going to be read by a voice assistant so do not use "/" or "*"
 Return the questions formatted like this:
 ["Question 1", "Question 2", "Question 3"]
 
-Thank you! <3`
+Thank you! <3`,
+            config: {
+                responseMimeType: "application/json",
+            },
         });
+
+        const questions = completion.text || "[]";
 
         const interview = {
             role, type, level,
             techstack: techstack.split(','),
+            questions: JSON.parse(questions),
             userId: userid,
             finalized: true,
             coverImage: getRandomInterviewCover(),
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
         }
 
         await db.collection("interviews").add(interview);
