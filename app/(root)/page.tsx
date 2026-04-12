@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import {dummyInterviews} from "@/constants";
 import InterviewCard from "@/components/InterviewCard";
-import {getCurrentUser, getInterviewsByUserId, getLatestInterviews} from "@/lib/actions/auth.actions";
+import {getCurrentUser} from "@/lib/actions/auth.actions"
+import {getInterviewsByUserId, getLatestInterviews} from "@/lib/actions/general.action";
 import { redirect } from "next/navigation";
 
 
@@ -53,11 +54,11 @@ const Page = async () => {
                 <h2>Your Interviews</h2>
 
                 <div className="interviews-section">
-                    {hasUpcomingInterviews ? (
-                        latestInterviews?.map((interview) => (
+                    {hasPastInterviews ? (
+                        userInterviews?.map((interview) => (
                             <InterviewCard key={interview.id} {...interview} />
                         ))) : (
-                        <p>There are no new interviews available</p>
+                        <p>You haven&apos;t taken any interviews yet</p>
                     )}
                 </div>
             </section>
@@ -66,11 +67,12 @@ const Page = async () => {
                 <h2>Take Interviews</h2>
 
                 <div className="interviews-section">
-                    {hasPastInterviews ? (
-                        userInterviews?.map((interview) => (
+
+                    {hasUpcomingInterviews ? (
+                        latestInterviews?.map((interview) => (
                             <InterviewCard key={interview.id} {...interview} />
                         ))) : (
-                        <p>You haven&apos;t taken any interviews yet</p>
+                        <p>There are no new interviews available</p>
                     )}
                 </div>
             </section>
