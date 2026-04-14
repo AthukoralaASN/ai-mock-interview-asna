@@ -190,6 +190,7 @@ export const feedbackSchema = z.object({
 });
 
 
+
 export const interviewCovers = [
   "/adobe.png",
   "/amazon.png",
