@@ -1,13 +1,16 @@
 import { ReactNode } from 'react'
 import Image from "next/image";
 import Link from "next/link";
-import {isAuthenticated} from "@/lib/actions/auth.actions";
+import {getCurrentUser, isAuthenticated} from "@/lib/actions/auth.actions";
 import {redirect} from "next/navigation";
 import { logout } from "@/lib/actions/auth.actions";
 import {Button} from "@/components/ui/button";
 
+import ProfileMenu from "@/components/ProfileMenu";
+
 const RootLayout = async ({children}:{children: ReactNode }) => {
     const isUserAuthenticated = await isAuthenticated();
+    const user = await getCurrentUser();
 
     if(!isUserAuthenticated) redirect('/sign-in')
 
@@ -19,9 +22,7 @@ const RootLayout = async ({children}:{children: ReactNode }) => {
                     <h2 className="text-primary-100">InterviewIQ</h2>
                 </Link>
 
-                <form action={logout}>
-                    <Button type="submit">Logout</Button>
-                </form>
+                <ProfileMenu user={user} />
             </nav>
 
             {children}

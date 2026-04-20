@@ -6,6 +6,7 @@ import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
 import {getFeedbackByInterviewId} from "@/lib/actions/general.action";
+import { getCurrentUser } from "@/lib/actions/auth.actions";
 
 const InterviewCard = async ({
                            id,
@@ -15,8 +16,14 @@ const InterviewCard = async ({
                            techstack,
                            createdAt,
                        }: InterviewCardProps) => {
-    const feedback = userId && id
-    ? await getFeedbackByInterviewId({ interviewId: id, userId})
+
+    const currentUser = await getCurrentUser();
+
+    const feedback = currentUser && id
+        ? await getFeedbackByInterviewId({
+            interviewId: id,
+            userId: currentUser.id,
+        })
         : null;
 
     const normalizedType = /mix/gi.test(type) ? "Mixed" : type;

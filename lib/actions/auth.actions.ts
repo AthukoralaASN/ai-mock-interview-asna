@@ -123,3 +123,20 @@ export async function logout() {
     cookieStore.delete("session");
 }
 
+export async function updateUser(data: {
+    name?: string;
+    email?: string;
+    image?: string;
+}): Promise<void> {
+    const user: User | null = await getCurrentUser();
+
+    if (!user) throw new Error("Not authenticated");
+
+    const updateData: any = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.image !== undefined) updateData.image = data.image;
+
+    await db.collection("users").doc(user.id).update(updateData);
+}
