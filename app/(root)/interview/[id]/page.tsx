@@ -33,6 +33,7 @@ const Page = async ({ params }: RouteParams) => {
                    interviewId={id}
                    type="interview"
                    questions={interview.questions}
+                   initialCredits={user?.credits ?? 0}
             />
         </>
     )

@@ -217,7 +217,7 @@
     }
 
     .card-interviewer {
-      @apply flex-center flex-col gap-2 p-7 h-[400px] blue-gradient-dark rounded-lg border-2 border-primary-200/50 flex-1 sm:basis-1/2 w-full;
+      @apply flex-center flex-col gap-2 p-7 h-[400px] purple-gradient-dark rounded-lg border-2 border-primary-200/50 flex-1 sm:basis-1/2 w-full;
     }
 
     .avatar {
@@ -266,7 +266,7 @@
   }
 
   .card-cta {
-    @apply flex flex-row blue-gradient-dark rounded-3xl px-16 py-6 items-center justify-between max-sm:px-4;
+    @apply flex flex-row purple-gradient-dark rounded-3xl px-16 py-6 items-center justify-between max-sm:px-4;
   }
 
   .interviews-section {
@@ -303,11 +303,22 @@
 }
 
 @utility pattern {
-  @apply bg-[url('/pattern.png')] bg-top bg-no-repeat;
+  background-image:
+          linear-gradient(rgba(168, 85, 247, 0.12), rgba(10, 0, 30, 0.95)),
+          url('/pattern.png');
+
+  background-position: top;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
-@utility blue-gradient-dark {
-  @apply bg-gradient-to-b from-[#171532] to-[#08090D];
+@utility purple-gradient-dark {
+  background: linear-gradient(
+          135deg,
+          #4c0f6b 0%,
+          #2a0a4a 50%,
+          #140424 100%
+  );
 }
 
 @utility blue-gradient {

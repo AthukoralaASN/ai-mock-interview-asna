@@ -1,13 +1,14 @@
 'use client';
 
-import React, {useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useRef, useState} from 'react'
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {useRouter} from "next/navigation";
-import {error} from "next/dist/build/output/log";
 import { vapi } from '@/lib/vapi.sdk';
 import {interviewer} from "@/constants";
 import {createFeedback} from "@/lib/actions/general.action";
+import {deductInterviewCredits} from "@/lib/actions/auth.actions";
+import {toast} from "sonner";
 
 
 enum CallStatus {
@@ -22,14 +23,20 @@ interface SavedMessage {
     content: string;
 }
 
-const Agent = ({ userName, userId, type, interviewId, questions }: AgentProps) => {
+const Agent = ({ userName, userId, type, interviewId, questions, initialCredits = 0 }: AgentProps) => {
     const router = useRouter();
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
+    const callStartedAtRef = useRef<number | null>(null);
+    const creditChargeHandledRef = useRef(false);
 
     useEffect(() => {
-        const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
+        const onCallStart = () => {
+            callStartedAtRef.current = Date.now();
+            creditChargeHandledRef.current = false;
+            setCallStatus(CallStatus.ACTIVE);
+        };
         const onCallEnd = () => setCallStatus(CallStatus.FINISHED);
 
         const onMessage = (message: Message) => {
@@ -62,7 +69,7 @@ const Agent = ({ userName, userId, type, interviewId, questions }: AgentProps) =
         }
     },[])
 
-    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+    const handleGenerateFeedback = useCallback(async (messages: SavedMessage[]) => {
         console.log('Generate feedback here');
 
         // TODO: create a server action that generates feedback
@@ -78,19 +85,74 @@ const Agent = ({ userName, userId, type, interviewId, questions }: AgentProps) =
             console.log('Error saving feedback');
             router.push('/');
         }
-    }
+    }, [interviewId, router, userId]);
+
+    const finalizeCreditCharge = useCallback(async () => {
+        if (type !== 'interview' || creditChargeHandledRef.current) {
+            return;
+        }
+
+        creditChargeHandledRef.current = true;
+
+        const startedAt = callStartedAtRef.current;
+        const endedAt = Date.now();
+
+        if (!startedAt) {
+            return;
+        }
+
+        try {
+            const result = await deductInterviewCredits({ startedAt, endedAt });
+
+            if (result.chargedCredits > 0) {
+                toast.success(
+                    `Charged ${result.chargedCredits.toFixed(2)} credits for ${result.durationMinutes.toFixed(2)} min. Balance: ${result.credits.toFixed(2)}`
+                );
+            }
+
+            router.refresh();
+        } catch (error) {
+            console.error("Failed to deduct interview credits", error);
+            toast.error("Interview completed, but credit deduction failed.");
+        }
+    }, [router, type]);
 
     useEffect(() => {
         if (callStatus === CallStatus.FINISHED) {
-            if(type === 'generate') {
-                router.push('/');
-            } else {
-                handleGenerateFeedback(messages);
-            }
+            const finishInterview = async () => {
+                await finalizeCreditCharge();
+
+                if(type === 'generate') {
+                    router.push('/');
+                } else {
+                    const userMessages = messages.filter(
+                        (msg) => msg.role === "user" && msg.content.trim().length > 2
+                    );
+
+                    const totalWords = userMessages.reduce((count, msg) => {
+                        return count + msg.content.trim().split(" ").length;
+                    }, 0);
+
+                    if (userMessages.length < 2 || totalWords < 10) {
+                        console.log("Not enough meaningful answers → skip feedback");
+                        router.push("/");
+                        return;
+                    }
+
+                    await handleGenerateFeedback(messages);
+                }
+            };
+
+            finishInterview();
         }
-    }, [messages, callStatus, userId, type]);
+    }, [callStatus, finalizeCreditCharge, handleGenerateFeedback, messages, router, type]);
 
     const handleCall = async () => {
+        if (type === 'interview' && initialCredits < 0.1) {
+            toast.error("You need at least 0.10 credits to start an interview.");
+            return;
+        }
+
         setCallStatus(CallStatus.CONNECTING);
 
         if(type === 'generate') {

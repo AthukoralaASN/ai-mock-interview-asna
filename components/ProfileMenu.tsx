@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { logout, updateUser } from "@/lib/actions/auth.actions";
+import { logout, purchaseCredits, updateUser } from "@/lib/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ArrowUp, Wallet } from "lucide-react";
+import { toast } from "sonner";
 
 type Props = {
-    user: any;
+    user: User | null;
 };
 
 export default function ProfileMenu({ user }: Props) {
@@ -21,6 +23,10 @@ export default function ProfileMenu({ user }: Props) {
     const [email, setEmail] = useState(user?.email || "");
 
     const [isVisible, setIsVisible] = useState(false);
+    const [credits, setCredits] = useState(Number(user?.credits ?? 0));
+    const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+    const [purchaseAmount, setPurchaseAmount] = useState("10");
+    const [isPurchasing, setIsPurchasing] = useState(false);
 
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,6 +99,29 @@ export default function ProfileMenu({ user }: Props) {
         }
     };
 
+    const handlePurchaseCredits = async () => {
+        const amount = Number(purchaseAmount);
+
+        if (!Number.isFinite(amount) || amount < 1) {
+            toast.error("Enter at least 1 credit.");
+            return;
+        }
+
+        try {
+            setIsPurchasing(true);
+
+            const result = await purchaseCredits(amount);
+            setCredits(result.credits);
+            setIsBuyModalOpen(false);
+            toast.success(`${amount.toFixed(2)} credits added successfully.`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Unable to purchase credits right now.");
+        } finally {
+            setIsPurchasing(false);
+        }
+    };
+
     return (
         <div className="relative">
             {/* Profile Button */}
@@ -125,8 +154,7 @@ export default function ProfileMenu({ user }: Props) {
 
                     {/* Drawer Panel */}
                     <div
-                        className={`absolute top-0 right-0 w-[400px] h-full bg-gradient-to-b from-[#171532] to-black 
-text-white p-6 transform transition-transform duration-300 ease-in-out ${
+                        className={`absolute top-0 right-0 w-[400px] h-full purple-gradient-dark text-white p-6 transform transition-transform duration-300 ease-in-out ${
                             isVisible ? "translate-x-0" : "translate-x-full"
                         }`}
                         onClick={(e) => e.stopPropagation()}
@@ -263,15 +291,121 @@ text-white p-6 transform transition-transform duration-300 ease-in-out ${
                                 </div>
                             </div>
 
-                            {/* LOGOUT */}
-                            <div className="mt-auto pb-10">
+                            {/* BOTTOM SECTION */}
+                            <div className="mt-auto space-y-4 pb-10">
+
+                                {/* CREDITS */}
+                                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
+                                    <div className="flex items-center justify-between rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/8">
+                                                <Wallet className="h-4 w-4 text-white" />
+                                            </div>
+                                            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Credits</span>
+                                        </div>
+
+                                        <span className="text-sm font-semibold text-white">{credits.toFixed(2)} Credits</span>
+                                    </div>
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="mt-3 w-full justify-center gap-2 border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                        onClick={() => setIsBuyModalOpen(true)}
+                                    >
+                                        <ArrowUp className="h-4 w-4" />
+                                        Buy Credits
+                                    </Button>
+                                </div>
+
+                                {/* LOGOUT */}
                                 <form action={logout}>
                                     <Button type="submit" className="w-full">
                                         Logout
                                     </Button>
                                 </form>
+
                             </div>
 
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isBuyModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 px-4">
+                    <div
+                        className="absolute inset-0"
+                        onClick={() => !isPurchasing && setIsBuyModalOpen(false)}
+                    />
+
+                    <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-[#121216] text-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                            <div>
+                                <h3 className="text-base font-semibold">Purchase InterviewIQ Credits</h3>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="text-sm text-gray-400 transition hover:text-white"
+                                onClick={() => !isPurchasing && setIsBuyModalOpen(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 px-5 py-4">
+                            <div className="rounded-xl border border-white/8 bg-white/5 px-4 py-5 text-center text-sm text-gray-300">
+                                You&apos;re adding <span className="font-semibold text-emerald-300">${purchaseAmount || "0"}</span> to your balance.
+                                Your new total will be{" "}
+                                <span className="font-semibold text-white">
+                                    {(credits + (Number(purchaseAmount) || 0)).toFixed(2)} credits
+                                </span>
+                                .
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm text-gray-300">Amount to Purchase</label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={purchaseAmount}
+                                    onChange={(e) => setPurchaseAmount(e.target.value)}
+                                    className="border-white/10 bg-black/40 text-white"
+                                />
+                            </div>
+
+                            <div className="flex gap-2">
+                                {["10", "25", "50"].map((value) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:bg-white/10"
+                                        onClick={() => setPurchaseAmount(value)}
+                                    >
+                                        ${value}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 border-t border-white/10 px-5 py-4">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setIsBuyModalOpen(false)}
+                                disabled={isPurchasing}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handlePurchaseCredits}
+                                disabled={isPurchasing}
+                            >
+                                {isPurchasing ? "Processing..." : "Purchase"}
+                            </Button>
                         </div>
                     </div>
                 </div>

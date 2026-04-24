@@ -36,6 +36,9 @@ interface User {
   name: string;
   email: string;
   id: string;
+  image?: string;
+  createdAt?: string;
+  credits?: number;
 }
 
 interface InterviewCardProps {
@@ -54,6 +57,7 @@ interface AgentProps {
   feedbackId?: string;
   type: "generate" | "interview";
   questions?: string[];
+  initialCredits?: number;
 }
 
 interface RouteParams {
