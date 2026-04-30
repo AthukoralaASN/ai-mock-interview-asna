@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { logout, purchaseCredits, updateUser } from "@/lib/actions/auth.actions";
+import { createStripeCheckoutSession, logout, updateUser } from "@/lib/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUp, Wallet } from "lucide-react";
@@ -23,7 +23,7 @@ export default function ProfileMenu({ user }: Props) {
     const [email, setEmail] = useState(user?.email || "");
 
     const [isVisible, setIsVisible] = useState(false);
-    const [credits, setCredits] = useState(Number(user?.credits ?? 0));
+    const [credits] = useState(Number(user?.credits ?? 0));
     const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
     const [purchaseAmount, setPurchaseAmount] = useState("10");
     const [isPurchasing, setIsPurchasing] = useState(false);
@@ -110,13 +110,16 @@ export default function ProfileMenu({ user }: Props) {
         try {
             setIsPurchasing(true);
 
-            const result = await purchaseCredits(amount);
-            setCredits(result.credits);
-            setIsBuyModalOpen(false);
-            toast.success(`${amount.toFixed(2)} credits added successfully.`);
+            const result = await createStripeCheckoutSession(amount);
+
+            if (!result.url) {
+                throw new Error("Stripe checkout URL was not returned.");
+            }
+
+            window.location.href = result.url;
         } catch (error) {
             console.error(error);
-            toast.error("Unable to purchase credits right now.");
+            toast.error("Unable to open Stripe checkout right now.");
         } finally {
             setIsPurchasing(false);
         }
@@ -168,7 +171,7 @@ export default function ProfileMenu({ user }: Props) {
                                     <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center border border-gray-600">
                                         {imagePreview || user?.image ? (
                                             <img
-                                                src={imagePreview || user.image}
+                                                src={imagePreview || user?.image || ""}
                                                 alt="profile"
                                                 className="w-full h-full object-cover"
                                             />

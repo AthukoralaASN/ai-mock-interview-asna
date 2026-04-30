@@ -41,7 +41,7 @@ const Page = async () => {
                 </div>
 
                 <Image
-                    src="/comp.png"
+                    src="/i1.png"
                     alt="robo-dude"
                     width={400}
                     height={400}

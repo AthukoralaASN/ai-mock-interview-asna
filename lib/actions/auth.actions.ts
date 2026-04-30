@@ -2,12 +2,14 @@
 
 import {auth, db} from "@/firebase/admin";
 import {cookies} from "next/headers";
+import {headers} from "next/headers";
 import {revalidatePath} from "next/cache";
 
 // const ONE_WEEK = 60; // 1 minute
 const ONE_WEEK = 60 * 60 * 24 * 7;
 const DEFAULT_SIGNUP_CREDITS = 10;
 const MIN_PURCHASE_CREDITS = 1;
+const STRIPE_CHECKOUT_API_URL = "https://api.stripe.com/v1/checkout/sessions";
 
 export async function signUp(params: SignUpParams) {
     const { uid, name, email } = params;
@@ -152,7 +154,7 @@ export async function updateUser(data: {
     revalidatePath("/");
 }
 
-export async function purchaseCredits(amount: number) {
+export async function createStripeCheckoutSession(amount: number) {
     const user = await getCurrentUser();
 
     if (!user) {
@@ -163,22 +165,123 @@ export async function purchaseCredits(amount: number) {
         throw new Error(`Minimum purchase is ${MIN_PURCHASE_CREDITS} credit`);
     }
 
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeSecretKey) {
+        throw new Error("Stripe is not configured");
+    }
+
     const normalizedAmount = Number(amount.toFixed(2));
+    const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const params = new URLSearchParams({
+        mode: "payment",
+        success_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/`,
+        customer_email: user.email,
+        "line_items[0][quantity]": "1",
+        "line_items[0][price_data][currency]": "usd",
+        "line_items[0][price_data][unit_amount]": String(Math.round(normalizedAmount * 100)),
+        "line_items[0][price_data][product_data][name]": "InterviewIQ Credits",
+        "metadata[userId]": user.id,
+        "metadata[credits]": String(normalizedAmount),
+    });
+
+    const response = await fetch(STRIPE_CHECKOUT_API_URL, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${stripeSecretKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+        cache: "no-store",
+    });
+
+    const session = await response.json();
+
+    if (!response.ok) {
+        throw new Error(session?.error?.message ?? "Unable to create Stripe checkout session");
+    }
+
+    return {
+        success: true,
+        url: session.url as string,
+    };
+}
+
+export async function confirmStripeCreditPurchase(sessionId: string) {
+    const user = await getCurrentUser();
+
+    if (!user) {
+        throw new Error("Not authenticated");
+    }
+
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeSecretKey) {
+        throw new Error("Stripe is not configured");
+    }
+
+    if (!sessionId?.startsWith("cs_")) {
+        throw new Error("Invalid checkout session");
+    }
+
+    const response = await fetch(`${STRIPE_CHECKOUT_API_URL}/${sessionId}`, {
+        headers: {
+            Authorization: `Bearer ${stripeSecretKey}`,
+        },
+        cache: "no-store",
+    });
+
+    const session = await response.json();
+
+    if (!response.ok) {
+        throw new Error(session?.error?.message ?? "Unable to verify Stripe checkout session");
+    }
+
+    if (session.payment_status !== "paid") {
+        throw new Error("Payment has not been completed");
+    }
+
+    if (session.metadata?.userId !== user.id) {
+        throw new Error("Checkout session does not belong to this user");
+    }
+
+    const normalizedAmount = Number(Number(session.metadata?.credits).toFixed(2));
+
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount < MIN_PURCHASE_CREDITS) {
+        throw new Error("Checkout session has an invalid credit amount");
+    }
+
     const userRef = db.collection("users").doc(user.id);
+    const paymentRef = db.collection("stripePayments").doc(sessionId);
 
     const updatedBalance = await db.runTransaction(async (transaction) => {
+        const paymentSnapshot = await transaction.get(paymentRef);
         const snapshot = await transaction.get(userRef);
         const currentCredits = Number(snapshot.data()?.credits ?? 0);
+
+        if (paymentSnapshot.exists) {
+            return currentCredits;
+        }
+
         const nextCredits = Number((currentCredits + normalizedAmount).toFixed(2));
 
         transaction.update(userRef, {
             credits: nextCredits,
         });
+        transaction.set(paymentRef, {
+            userId: user.id,
+            credits: normalizedAmount,
+            amountTotal: session.amount_total,
+            currency: session.currency,
+            paymentStatus: session.payment_status,
+            createdAt: new Date().toISOString(),
+        });
 
         return nextCredits;
     });
 
-    revalidatePath("/");
+
 
     return {
         success: true,
