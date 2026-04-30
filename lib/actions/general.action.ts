@@ -136,21 +136,65 @@ Return ONLY valid JSON in this exact format:
     }
 }
 
-export async function getFeedbackByInterviewId(params: GetFeedbackByInterviewIdParams): Promise<Feedback> {
+export async function getFeedbackByInterviewId(
+    params: GetFeedbackByInterviewIdParams
+): Promise<Feedback | null> {
     const { interviewId, userId } = params;
-
 
     const feedback = await db
         .collection("feedback")
         .where("interviewId", "==", interviewId)
-        .where('userId', '==', userId)
+        .where("userId", "==", userId)
+        .orderBy("createdAt", "desc") // ✅ FIX: always get latest
         .limit(1)
         .get();
 
-    if(feedback.empty) return null;
+    if (feedback.empty) return null;
 
     const feedbackDoc = feedback.docs[0];
+
     return {
-        id: feedbackDoc.id, ...feedbackDoc.data(),
+        id: feedbackDoc.id,
+        ...feedbackDoc.data(),
     } as Feedback;
+}
+
+export async function getFeedbackHistoryByInterviewId(interviewId: string, userId: string): Promise<Feedback[]> {
+    const feedback = await db
+        .collection("feedback")
+        .where("interviewId", "==", interviewId)
+        .where("userId", "==", userId)
+        .orderBy("createdAt", "desc")
+        .get();
+
+    return feedback.docs.map((feedbackDoc) => ({
+        id: feedbackDoc.id,
+        ...feedbackDoc.data(),
+    })) as Feedback[];
+}
+
+export async function getFeedbackById(params: {
+    feedbackId: string;
+    interviewId: string;
+    userId: string;
+}): Promise<Feedback | null> {
+    const { feedbackId, interviewId, userId } = params;
+
+    const feedbackDoc = await db
+        .collection("feedback")
+        .doc(feedbackId)
+        .get();
+
+    if (!feedbackDoc.exists) return null;
+
+    const feedback = {
+        id: feedbackDoc.id,
+        ...feedbackDoc.data(),
+    } as Feedback;
+
+    if (feedback.interviewId !== interviewId || feedback.userId !== userId) {
+        return null;
+    }
+
+    return feedback;
 }
