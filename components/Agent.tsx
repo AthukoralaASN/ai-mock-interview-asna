@@ -210,7 +210,7 @@ const Agent = ({ userName, userId, type, interviewId, questions, initialCredits 
                 <div className="card-border">
                     <div className="card-content">
                         <Image
-                            src="/user-avatar.jpg"
+                            src="/u avatar.jpg"
                             alt="profile-image"
                             width={539}
                             height={539}

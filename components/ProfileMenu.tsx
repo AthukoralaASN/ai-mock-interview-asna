@@ -157,7 +157,7 @@ export default function ProfileMenu({ user }: Props) {
 
                     {/* Drawer Panel */}
                     <div
-                        className={`absolute top-0 right-0 w-[400px] h-full purple-gradient-dark text-white p-6 transform transition-transform duration-300 ease-in-out ${
+                        className={`absolute top-0 right-0 w-[400px] h-full bg-[#14071f] backdrop-blur-md text-white p-6 transform transition-transform duration-300 ease-in-out border-l border-purple-900/40 ${
                             isVisible ? "translate-x-0" : "translate-x-full"
                         }`}
                         onClick={(e) => e.stopPropagation()}
