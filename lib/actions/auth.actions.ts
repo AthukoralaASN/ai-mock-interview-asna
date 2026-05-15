@@ -5,7 +5,6 @@ import {cookies} from "next/headers";
 import {headers} from "next/headers";
 import {revalidatePath} from "next/cache";
 
-// const ONE_WEEK = 60; // 1 minute
 const ONE_WEEK = 60 * 60 * 24 * 7;
 const DEFAULT_SIGNUP_CREDITS = 10;
 const MIN_PURCHASE_CREDITS = 1;

@@ -8,7 +8,7 @@ import {google} from "@ai-sdk/google";
 import OpenAI from "openai";
 
 export async function getInterviewsByUserId(userId: string | undefined) {
-    if (!userId) return []; // 🛑 prevent crash
+    if (!userId) return [];
 
     const interviews = await db
         .collection("interviews")
@@ -145,7 +145,7 @@ export async function getFeedbackByInterviewId(
         .collection("feedback")
         .where("interviewId", "==", interviewId)
         .where("userId", "==", userId)
-        .orderBy("createdAt", "desc") // ✅ FIX: always get latest
+        .orderBy("createdAt", "desc")
         .limit(1)
         .get();
 

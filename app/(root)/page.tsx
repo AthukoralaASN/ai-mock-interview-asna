@@ -12,7 +12,6 @@ import { redirect } from "next/navigation";
 const Page = async () => {
     const user = await getCurrentUser();
 
-    // 🔥 STOP EXECUTION if no user
     if (!user) redirect("/sign-in");
 
     const [userInterviews, latestInterviews] = await Promise.all([

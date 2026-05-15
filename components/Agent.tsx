@@ -76,7 +76,6 @@ const Agent = ({ userName, userId, userImage, type, interviewId, questions, init
     const handleGenerateFeedback = useCallback(async (messages: SavedMessage[]) => {
         console.log('Generate feedback here');
 
-        // TODO: create a server action that generates feedback
         const { success, feedbackId: id } = await createFeedback({
             interviewId: interviewId!,
             userId: userId!,
@@ -160,7 +159,6 @@ const Agent = ({ userName, userId, userImage, type, interviewId, questions, init
         setCallStatus(CallStatus.CONNECTING);
 
         if(type === 'generate') {
-        // Pass the authenticated user's id into Vapi so the assistant prompt can use {{userid}}.
         const assistantOverrides = {
             variableValues: {
                 username: userName,
@@ -168,13 +166,6 @@ const Agent = ({ userName, userId, userImage, type, interviewId, questions, init
             },
         };
 
-        // Old hardcoded-flow call kept for reference:
-        // await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        //     variableValues: {
-        //         username: userName,
-        //         userid: userId,
-        //     }
-        // })
         await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, assistantOverrides)
     } else {
             let formattedQuestions = '';
@@ -205,7 +196,6 @@ const Agent = ({ userName, userId, userImage, type, interviewId, questions, init
     return (
         <>
             <div className="call-view">
-                {/* AI Interviewer Card */}
                 <div className="card-interviewer">
                     <div className="avatar">
                         <Image
@@ -220,7 +210,6 @@ const Agent = ({ userName, userId, userImage, type, interviewId, questions, init
                     <h3>AI Interviewer</h3>
                 </div>
 
-                {/* User Profile Card */}
                 <div className="card-border">
                     <div className="card-content">
                         <img

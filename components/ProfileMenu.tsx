@@ -36,7 +36,7 @@ export default function ProfileMenu({ user }: Props) {
         try {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "profile_upload"); // your preset
+            formData.append("upload_preset", "profile_upload");
 
             const res = await fetch(
                 "https://api.cloudinary.com/v1_1/dfecxgmvd/image/upload",
@@ -48,13 +48,10 @@ export default function ProfileMenu({ user }: Props) {
 
             const data = await res.json();
 
-            // 🔥 Cloudinary image URL
             const imageUrl = data.secure_url;
 
-            // save to DB
             await updateUser({ image: imageUrl });
 
-            // update UI
             setImagePreview(imageUrl);
 
         } catch (err) {
@@ -62,7 +59,6 @@ export default function ProfileMenu({ user }: Props) {
         }
     };
 
-    // animation mount/unmount
     useEffect(() => {
         if (isOpen) {
             setShouldRender(true);
@@ -127,7 +123,6 @@ export default function ProfileMenu({ user }: Props) {
 
     return (
         <div className="relative">
-            {/* Profile Button */}
             <button
                 onClick={() => setIsOpen(true)}
                 className="w-10 h-10 rounded-full bg-gray-600 text-white flex items-center justify-center overflow-hidden"
@@ -143,11 +138,9 @@ export default function ProfileMenu({ user }: Props) {
                 )}
             </button>
 
-            {/* Drawer */}
             {shouldRender && (
                 <div className="fixed inset-0 z-50">
 
-                    {/* Overlay */}
                     <div
                         onClick={() => setIsOpen(false)}
                         className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
@@ -155,7 +148,6 @@ export default function ProfileMenu({ user }: Props) {
                         }`}
                     />
 
-                    {/* Drawer Panel */}
                     <div
                         className={`absolute top-0 right-0 w-[400px] h-full bg-[#14071f] backdrop-blur-md text-white p-6 transform transition-transform duration-300 ease-in-out border-l border-purple-900/40 ${
                             isVisible ? "translate-x-0" : "translate-x-full"
@@ -163,8 +155,6 @@ export default function ProfileMenu({ user }: Props) {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex flex-col h-full">
-                            {/*<div className="flex justify-center pt-10 mb-12">*/}
-                            {/* Avatar */}
                             <div className="flex justify-center pt-10 mb-12">
                                 <label className="relative cursor-pointer">
 
@@ -182,7 +172,6 @@ export default function ProfileMenu({ user }: Props) {
                                         )}
                                     </div>
 
-                                    {/* Hidden file input */}
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -192,10 +181,8 @@ export default function ProfileMenu({ user }: Props) {
                                 </label>
                             </div>
 
-                            {/* FIELDS */}
                             <div className="flex flex-col gap-4">
 
-                                {/* NAME */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-400 shrink-0 text-sm">
                                         Name:
@@ -238,7 +225,6 @@ export default function ProfileMenu({ user }: Props) {
                                     )}
                                 </div>
 
-                                {/* EMAIL */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-400 shrink-0 text-sm">
                                         Email:
@@ -281,7 +267,6 @@ export default function ProfileMenu({ user }: Props) {
                                     )}
                                 </div>
 
-                                {/* ACCOUNT */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-400 shrink-0 text-sm">
                                         Account Created:
@@ -294,10 +279,8 @@ export default function ProfileMenu({ user }: Props) {
                                 </div>
                             </div>
 
-                            {/* BOTTOM SECTION */}
                             <div className="mt-auto space-y-4 pb-10">
 
-                                {/* CREDITS */}
                                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
                                     <div className="flex items-center justify-between rounded-xl border border-white/8 bg-black/20 px-3 py-2">
                                         <div className="flex items-center gap-2">
@@ -321,7 +304,6 @@ export default function ProfileMenu({ user }: Props) {
                                     </Button>
                                 </div>
 
-                                {/* LOGOUT */}
                                 <form action={logout}>
                                     <Button type="submit" className="w-full">
                                         Logout

@@ -1,7 +1,6 @@
 import {getCurrentUser} from "@/lib/actions/auth.actions";
 import {
     getFeedbackById,
-    getFeedbackByInterviewId, // ❌ (kept for reference, not used anymore)
     getFeedbackHistoryByInterviewId,
     getInterviewsById
 } from "@/lib/actions/general.action";
@@ -25,50 +24,10 @@ const Page = async ({ params, searchParams }: RouteParams) => {
     const interview = await getInterviewsById(id);
     if(!interview) redirect('/');
 
-    /**
-     * ❌ OLD APPROACH (Problem)
-     * - Uses getFeedbackByInterviewId (random result due to no order guarantee)
-     * - Causes outdated feedback to show after multiple attempts
-     */
-    /*
-    const [latestFeedback, feedbackHistory] = await Promise.all([
-        getFeedbackByInterviewId({
-            interviewId: id,
-            userId: user.id,
-        }),
-        getFeedbackHistoryByInterviewId(id, user.id),
-    ]);
-    */
-
-    /**
-     * ✅ NEW APPROACH (Fix)
-     * - Use ONLY history function
-     * - Already sorted by createdAt DESC
-     * - feedbackHistory[0] = latest attempt ALWAYS
-     */
     const feedbackHistory = await getFeedbackHistoryByInterviewId(id, user.id);
 
-    // ✅ Safety: if no feedback exists, redirect
     if (!feedbackHistory.length) redirect('/');
 
-    /**
-     * ❌ OLD LOGIC
-     */
-    /*
-    const feedback = feedbackId
-        ? await getFeedbackById({
-            feedbackId,
-            interviewId: id,
-            userId: user.id,
-        })
-        : latestFeedback;
-    */
-
-    /**
-     * ✅ NEW LOGIC
-     * - If user selects past attempt → load that
-     * - Otherwise → ALWAYS show latest (index 0)
-     */
     const feedback = feedbackId
         ? await getFeedbackById({
             feedbackId,
