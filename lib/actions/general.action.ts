@@ -23,7 +23,7 @@ export async function getInterviewsByUserId(userId: string | undefined) {
 }
 
 export async function getLatestInterviews(params: GetLatestInterviewsParams): Promise<Interview[]> {
-    const { userId, limit = 20 } = params;
+    const { userId, limit = 6 } = params;
 
 
     const interviews = await db

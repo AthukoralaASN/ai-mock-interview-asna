@@ -23,13 +23,17 @@ interface SavedMessage {
     content: string;
 }
 
-const Agent = ({ userName, userId, type, interviewId, questions, initialCredits = 0 }: AgentProps) => {
+const Agent = ({ userName, userId, userImage, type, interviewId, questions, initialCredits = 0 }: AgentProps) => {
     const router = useRouter();
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
     const callStartedAtRef = useRef<number | null>(null);
     const creditChargeHandledRef = useRef(false);
+    const userAvatarSrc =
+        userImage && userImage.trim() !== ""
+            ? userImage
+            : "/u avatar.jpg";
 
     useEffect(() => {
         const onCallStart = () => {
@@ -156,12 +160,22 @@ const Agent = ({ userName, userId, type, interviewId, questions, initialCredits 
         setCallStatus(CallStatus.CONNECTING);
 
         if(type === 'generate') {
-        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+        // Pass the authenticated user's id into Vapi so the assistant prompt can use {{userid}}.
+        const assistantOverrides = {
             variableValues: {
                 username: userName,
                 userid: userId,
-            }
-        })
+            },
+        };
+
+        // Old hardcoded-flow call kept for reference:
+        // await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+        //     variableValues: {
+        //         username: userName,
+        //         userid: userId,
+        //     }
+        // })
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, assistantOverrides)
     } else {
             let formattedQuestions = '';
 
@@ -209,8 +223,8 @@ const Agent = ({ userName, userId, type, interviewId, questions, initialCredits 
                 {/* User Profile Card */}
                 <div className="card-border">
                     <div className="card-content">
-                        <Image
-                            src="/u avatar.jpg"
+                        <img
+                            src={userAvatarSrc}
                             alt="profile-image"
                             width={539}
                             height={539}
